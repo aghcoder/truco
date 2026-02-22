@@ -1,0 +1,23 @@
+{
+  "name": "truco",
+  "version": "1.0.0",
+  "description": "Contador de puntos para Truco",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build required - pure HTML'",
+    "sync": "npx cap sync",
+    "android": "npx cap open android",
+    "add-android": "npx cap add android",
+    "run-android": "npx cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "keywords": ["truco", "uruguay", "card-game", "capacitor", "android"],
+  "author": "",
+  "license": "MIT"
+}
