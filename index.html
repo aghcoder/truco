@@ -520,9 +520,10 @@ function renderSection(teamIdx, section, pts) {
 }
 
 function renderScores(teamIdx) {
+    if (!state.maxPoints) return;
     const pts  = state.teams[teamIdx].points;
-    const half = state.halfPoints || 15;
-    const max  = state.maxPoints  || 30;
+    const half = state.halfPoints;
+    const max  = state.maxPoints;
 
     renderSection(teamIdx, 'malas',  Math.min(pts, half));
     renderSection(teamIdx, 'buenas', Math.max(0, pts - half));
@@ -616,7 +617,10 @@ function editName(teamIdx) {
     input.focus();
     input.select();
 
+    let done = false;
     const finish = () => {
+        if (done) return;
+        done = true;
         const newName = input.value.trim() || current;
         state.teams[teamIdx].name = newName;
         const span = document.createElement('span');
@@ -650,6 +654,7 @@ function loadState() {
         const saved = localStorage.getItem('truco_state');
         if (!saved) return;
         const p = JSON.parse(saved);
+        if (!Array.isArray(p.teams) || p.teams.length !== 2) return;
         state = {
             maxPoints:  p.maxPoints  || null,
             halfPoints: p.halfPoints || null,
