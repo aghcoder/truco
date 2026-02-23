@@ -167,20 +167,14 @@
         .malas-sec .section-label { color: var(--muted); }
         .buenas-sec .section-label { color: var(--buenas-col); }
 
-        /*
-         * flex-wrap: wrap-reverse → los items llenan de abajo hacia arriba.
-         * align-content: flex-start → con wrap-reverse, "start" = borde inferior,
-         *   así los items se empaquetan en el fondo.
-         * Los SVG llenos se renderizan primero (van al fondo),
-         * los ghost después (van arriba).
-         */
+        /* Columna top→bottom: grupos llenos arriba, ghost invisibles abajo */
         .section-groups {
             flex: 1;
             width: 100%;
             display: flex;
-            flex-wrap: wrap-reverse;
-            align-content: flex-start;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
             gap: clamp(3px, 1vw, 5px);
             overflow: hidden;
         }
@@ -202,21 +196,6 @@
         }
 
         .stroke-svg .diag { stroke: var(--ink-diag); }
-
-        /* Slot vacío pre-asignado */
-        .stroke-ghost {
-            width: clamp(24px, 6.5vw, 38px);
-            height: clamp(24px, 6.5vw, 38px);
-            flex-shrink: 0;
-        }
-
-        .stroke-ghost path {
-            stroke: #d8d2ca;
-            stroke-width: 1.2;
-            fill: none;
-            stroke-dasharray: 3 3;
-            stroke-linecap: round;
-        }
 
         /* ── Trash can ── */
         .team-footer {
@@ -528,35 +507,15 @@ function getGroupSVG(count) {
     return `<svg class="stroke-svg" viewBox="0 0 40 40">${p}</svg>`;
 }
 
-// Slot vacío pre-asignado (muestra el espacio disponible)
-function getGhostSVG() {
-    return `<svg class="stroke-ghost" viewBox="0 0 40 40">
-        <path d="M8,8 L32,8 L32,32 L8,32 Z"/>
-    </svg>`;
-}
-
 // ── Render ────────────────────────────────────────────────────────────────────
 
-/*
- * Renderiza una sección con todos sus slots pre-asignados.
- * Los SVG llenos se renderizan PRIMERO: con flex-wrap:wrap-reverse
- * quedan en el fondo (abajo). Los ghost van encima (arriba).
- */
-function renderSection(teamIdx, section, filledPts, totalPts) {
+function renderSection(teamIdx, section, pts) {
     const container  = document.getElementById(`groups-${section}-${teamIdx}`);
-    const totalSlots = Math.ceil(totalPts / 5);
-    const fullGroups = Math.floor(filledPts / 5);
-    const remainder  = filledPts % 5;
-    const usedSlots  = fullGroups + (remainder > 0 ? 1 : 0);
-    const emptySlots = totalSlots - usedSlots;
-
+    const fullGroups = Math.floor(pts / 5);
+    const remainder  = pts % 5;
     let html = '';
-    // Llenos primero → van al fondo por wrap-reverse
     for (let i = 0; i < fullGroups; i++) html += getGroupSVG(5);
-    if (remainder > 0)                   html += getGroupSVG(remainder);
-    // Ghost después → van arriba
-    for (let i = 0; i < emptySlots; i++) html += getGhostSVG();
-
+    if (remainder > 0) html += getGroupSVG(remainder);
     container.innerHTML = html;
 }
 
@@ -565,8 +524,8 @@ function renderScores(teamIdx) {
     const half = state.halfPoints || 15;
     const max  = state.maxPoints  || 30;
 
-    renderSection(teamIdx, 'malas',  Math.min(pts, half),       half);
-    renderSection(teamIdx, 'buenas', Math.max(0, pts - half),   half);
+    renderSection(teamIdx, 'malas',  Math.min(pts, half));
+    renderSection(teamIdx, 'buenas', Math.max(0, pts - half));
 
     document.getElementById(`count-${teamIdx}`).textContent = `${pts} / ${max}`;
 }
