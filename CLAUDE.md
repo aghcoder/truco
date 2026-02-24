@@ -58,3 +58,179 @@ State is persisted to `localStorage` on every change via `saveState()` / `loadSt
 - [ ] Light/dark mode
 - [ ] Sound effects on point addition
 - [ ] Win animations
+
+
+
+
+-------------------------------------------------------------
+# Instrucciones de Git y Gestión de Ramas
+
+## Flujo de trabajo Git
+
+### Repositorio
+- **Remote:** https://github.com/aghcoder/unami
+
+### Estructura de ramas
+
+| Rama      | Uso                              | Se modifica desde |
+|-----------|----------------------------------|-------------------|
+| `develop` | Desarrollo activo ← RAMA DE TRABAJO | Directo       |
+| `stage`   | UAT / pre-producción             | Merge de develop  |
+| `main`    | Producción (no tocar sin avisar) | Solo cuando se indique |
+
+
+## Reglas generales
+- Todos los cambios de código se gestionan en el repositorio de GitHub ya configurado
+- NUNCA hacer cambios directamente en `main` o `stage`
+- Antes de cualquier cambio, verificar que estás en la rama correcta con `git branch`
+
+## Flujo de trabajo estándar
+
+### UNICAMENTE cuando diga subir a develop o similar mandar el codigo nuevo y los cambios sino mantener en localhost
+1. Posicionarse en `develop`: `git checkout develop`
+2. Hacer pull para tener la última versión: `git pull origin develop`
+3. Aplicar los cambios solicitados
+4. Hacer commit con mensaje descriptivo: `git commit -m "descripción del cambio"`
+5. Hacer push a develop: `git push origin develop`
+
+## Activación de pase a Stage / UAT
+Cuando el usuario diga alguna de estas frases (o similares):
+- "mandá a UAT"
+- "pasá a stage"  
+- "pase a UAT"
+- "deployá a stage"
+- "subí a UAT"
+- "promové a stage"
+- "listo para stage"
+
+### Ejecutar este flujo:
+```bash
+# 1. Asegurarse que develop está actualizado
+git checkout develop
+git pull origin develop
+
+# 2. Cambiar a stage
+git checkout stage
+
+# 3. Pull de stage por si hay cambios
+git pull origin stage
+
+# 4. Mergear develop en stage
+git merge develop --no-ff -m "merge: develop -> stage [UAT]"
+
+# 5. Push a stage
+git push origin stage
+
+# 6. Volver a develop para seguir trabajando
+git checkout develop
+```
+
+## Estructura de ramas
+| Rama      | Uso                              | Se modifica desde |
+|-----------|----------------------------------|-------------------|
+| `develop` | Desarrollo activo                | Directo           |
+| `stage`   | UAT / pre-producción             | Merge de develop  |
+| `main`    | Producción (no tocar sin avisar) | Solo cuando se indique |
+
+## Mensajes de commit
+Usar prefijos descriptivos:
+- `feat:` para funcionalidades nuevas
+- `fix:` para correcciones
+- `style:` para cambios visuales
+- `refactor:` para refactorizaciones
+- `docs:` para documentación
+- `chore:` para tareas de mantenimiento
+
+## Confirmación obligatoria
+Antes de ejecutar el pase a stage, mostrar al usuario:
+- Qué commits van a ser mergeados
+- Qué archivos cambiaron
+- Pedir confirmación explícita antes de hacer el push a `stage`
+```
+# Análisis y Corrección Automática de la Solución
+
+Actuás como un arquitecto de software senior. Tu misión NO es hacer reportes 
+ni diagramas. Tu misión es CORREGIR y EJECUTAR.
+
+---
+-------------------------------------------------------------
+## MEJORA CONTINUA
+
+Analizá toda la solución en silencio y seguí exactamente estas reglas:
+
+### 🔴 CRÍTICOS y 🟠 SEVERIDAD ALTA → EJECUTAR SIN PREGUNTAR
+- Identificalos, corregilos y aplicá los cambios directamente en el código
+- Hacé commit de cada corrección con un mensaje descriptivo
+- Después de corregir cada uno, informá en UNA línea qué fue y qué hiciste:
+  `✅ [archivo:línea] Descripción del problema → qué se corrigió`
+
+### 🟡 RIESGO MEDIO y 🟢 RIESGO BAJO → SOLO UN TITULAR
+- No corrijas nada
+- Listá cada uno en una sola línea con este formato:
+  `🟡 [archivo:línea] Título del problema`
+  `🟢 [archivo:línea] Título del problema`
+
+---
+
+## QUÉ ANALIZAR
+
+Revisá en este orden de prioridad:
+
+1. **Lógica y contradicciones** — condiciones imposibles, race conditions, 
+   casos borde sin manejar, reglas de negocio rotas
+
+2. **Base de datos** — queries N+1, transacciones ausentes, 
+   falta de índices críticos, riesgo de pérdida de datos
+
+3. **Seguridad** — credenciales expuestas, inputs sin sanitizar, 
+   endpoints sin protección, SQL injection, XSS
+
+4. **Performance** — loops costosos, llamadas bloqueantes, 
+   operaciones síncronas que rompen la experiencia
+
+5. **Arquitectura** — dependencias circulares, acoplamiento que 
+   impide que el sistema escale o se mantenga
+
+6. **Mantenibilidad** — código que activamente dificulta 
+   entender o modificar el sistema
+
+---
+
+## CRITERIO DE CLASIFICACIÓN
+
+| Severidad | Criterio |
+|-----------|----------|
+| 🔴 Crítico | Puede romper el sistema, pérdida de datos o vulnerabilidad de seguridad explotable |
+| 🟠 Alta | Degrada seriamente la performance, lógica incorrecta que afecta el negocio |
+| 🟡 Media | Deuda técnica que acumula riesgo, mala práctica con impacto futuro |
+| 🟢 Baja | Mejora de código, legibilidad, convenciones |
+
+---
+
+## FORMATO DE SALIDA ESPERADO
+```
+Analizando la solución...
+
+— CORRECCIONES APLICADAS ——————————————————————
+✅ [auth.js:47] Token JWT sin expiración → agregado exp de 24hs
+✅ [userService.js:103] Query N+1 en listado de usuarios → reemplazado por JOIN
+✅ [db.js:12] Password de BD hardcodeada → movida a variable de entorno
+✅ [api.js:88] Endpoint /admin sin autenticación → agregado middleware auth
+...
+
+— PENDIENTE (riesgo medio/bajo) ————————————————
+🟡 [userController.js:34] Falta paginación en endpoint GET /users
+🟡 [helpers.js:78] Función de 200 líneas que debería dividirse
+🟢 [index.js:5] Variable llamada 'data' sin nombre descriptivo
+🟢 [styles.css:120] Reglas CSS duplicadas
+...
+```
+
+---
+
+## RESTRICCIONES
+- No hagas preguntas antes de empezar, arrancá directo
+- No expliques lo que vas a hacer, hacelo
+- No generes reportes, diagramas ni documentación
+- Si hay ambigüedad en si algo es crítico o no, tratalo como crítico y corregilo
+- Al terminar todo, preguntá: ¿Querés que resuelva también los de riesgo medio?
