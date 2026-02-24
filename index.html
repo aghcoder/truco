@@ -6,25 +6,29 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Truco</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f0ede8;
-            --card: #ffffff;
-            --border: #ddd8d0;
-            --accent: #1e3a5f;
-            --ink: #1c54c4;       /* azul lapicera */
-            --ink-diag: #c0392b;  /* diagonal en rojo */
-            --muted: #9e9e9e;
+            --ink:      #2c5aa0;
+            --ink-pen:  rgba(44, 90, 160, 0.82);
+            --ruled:    rgba(100, 160, 220, 0.38);
+            --ruled-h:  28px;
             --buenas-col: #2e7d32;
-            --text: #1a1a2e;
+            --muted:    #8aabcc;
+            --text:     #1e3245;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg);
+            background-color: #ffffff;
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent calc(var(--ruled-h) - 1px),
+                var(--ruled) calc(var(--ruled-h) - 1px),
+                var(--ruled) var(--ruled-h)
+            );
             min-height: 100vh;
             min-height: -webkit-fill-available;
             color: var(--text);
@@ -37,30 +41,29 @@
 
         /* ── Header ── */
         header {
-            background: var(--accent);
-            padding: clamp(10px, 2vh, 15px) 16px;
-            text-align: center;
-            flex-shrink: 0;
-            position: relative;
+            padding: clamp(5px, 1.4vh, 10px) 16px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+            position: relative;
         }
 
         header h1 {
-            font-size: clamp(1.2rem, 5vw, 1.7rem);
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: 8px;
+            font-family: 'Caveat', cursive;
+            font-size: clamp(1rem, 4.5vw, 1.5rem);
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 7px;
             text-transform: uppercase;
         }
 
         .btn-reset {
             position: absolute;
-            right: 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: rgba(255,255,255,0.75);
+            right: 16px;
+            background: none;
+            border: 1px solid rgba(44, 90, 160, 0.3);
+            color: rgba(44, 90, 160, 0.7);
             font-family: 'Inter', sans-serif;
             font-size: 0.65rem;
             font-weight: 600;
@@ -71,125 +74,140 @@
             text-transform: uppercase;
             touch-action: manipulation;
         }
-        .btn-reset:active { background: rgba(255,255,255,0.2); }
+        .btn-reset:active { background: rgba(44, 90, 160, 0.08); }
 
-        /* ── Área de juego ── */
-        .game-area {
+        /* ── Paper ── */
+        .paper {
             flex: 1;
-            display: flex;
-            gap: clamp(8px, 2vw, 14px);
-            padding: clamp(10px, 2vh, 14px);
-            overflow: hidden;
-        }
-
-        .team-card {
-            flex: 1;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
             display: flex;
             flex-direction: column;
+            position: relative;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
         }
 
-        .team-header {
-            padding: clamp(7px, 1.4vh, 11px) 10px;
-            text-align: center;
-            background: var(--accent);
-            cursor: pointer;
+        /* Línea vertical de lapicera al centro */
+        .paper::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1.5px;
+            background: var(--ink-pen);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* ── Nombres ── */
+        .paper-names {
+            display: flex;
             flex-shrink: 0;
+            padding: clamp(4px, 1vh, 8px) 0 clamp(2px, 0.6vh, 5px);
         }
 
-        .team-name {
-            font-size: clamp(0.85rem, 3.5vw, 1.1rem);
-            font-weight: 700;
-            color: #fff;
-            display: block;
-            letter-spacing: 0.5px;
-        }
-
-        .team-name-input {
-            font-family: 'Inter', sans-serif;
-            font-size: clamp(0.85rem, 3.5vw, 1.1rem);
-            font-weight: 700;
-            color: #fff;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.4);
+        .paper-name {
+            flex: 1;
+            padding: 0 clamp(10px, 2.5vw, 16px);
             text-align: center;
-            width: 100%;
-            outline: none;
+        }
+
+        .paper-name span,
+        .paper-name .team-name {
+            font-family: 'Caveat', cursive;
+            font-size: clamp(0.78rem, 3.2vw, 1rem);
+            font-weight: 700;
+            color: var(--ink);
+            display: block;
+            text-align: center;
+        }
+
+        /* Fila de contadores separada — no tapeable para puntos */
+        .paper-counts {
+            display: flex;
+            flex-shrink: 0;
+            padding: 0 0 clamp(3px, 0.7vh, 6px);
+        }
+
+        .paper-count {
+            flex: 1;
+            text-align: center;
         }
 
         .score-count {
-            font-size: clamp(0.58rem, 1.7vw, 0.68rem);
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(0.46rem, 1.2vw, 0.56rem);
             font-weight: 500;
-            color: rgba(255,255,255,0.5);
-            letter-spacing: 1.5px;
-            margin-top: 2px;
+            color: var(--muted);
+            letter-spacing: 1px;
         }
 
-        /* ── Zona de puntaje (tappable) ── */
-        .score-body {
+        .team-name-input {
+            font-family: 'Caveat', cursive;
+            font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+            font-weight: 700;
+            color: var(--ink);
+            background: transparent;
+            border: none;
+            border-bottom: 1.5px solid var(--ink);
+            outline: none;
+            width: 100%;
+        }
+
+        /* ── Filas de puntaje ── */
+        .paper-row {
             flex: 1;
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            min-height: 0;
+        }
+
+        .p-section {
+            flex: 1;
+            padding: clamp(4px, 1vh, 8px) clamp(8px, 2vw, 14px);
             cursor: pointer;
             touch-action: manipulation;
             user-select: none;
-        }
-
-        .score-section {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;   /* centra el label horizontalmente */
             min-height: 0;
-            padding: clamp(5px, 1.1vh, 8px) clamp(6px, 1.8vw, 10px) clamp(3px, 0.6vh, 5px);
+            overflow: hidden;
         }
 
-        .score-section.malas-sec {
-            border-bottom: 2px dashed var(--border);
-        }
-
-        .section-label {
-            font-size: clamp(0.48rem, 1.5vw, 0.58rem);
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-bottom: clamp(3px, 0.7vh, 5px);
+        /* Línea horizontal de lapicera (malas / buenas) */
+        .h-divider {
+            height: 1.5px;
+            background: var(--ink-pen);
             flex-shrink: 0;
-            text-align: center;
         }
 
-        .malas-sec .section-label { color: var(--muted); }
-        .buenas-sec .section-label { color: var(--buenas-col); }
-
-        /* Columna top→bottom: grupos llenos arriba, ghost invisibles abajo */
+        /* ── Grupos de palitos ── */
         .section-groups {
             flex: 1;
             width: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            gap: clamp(3px, 1vw, 5px);
-            overflow: hidden;
+            overflow: visible;
         }
 
-        /* ── SVG cuadrado: trazo azul lapicera irregular ── */
+        /* Cada slot ocupa una fracción igual del alto, centrado */
+        .slot {
+            flex: 1;
+            min-height: clamp(18px, 4vh, 36px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── SVG palitos ── */
         .stroke-svg {
-            width: clamp(24px, 6.5vw, 38px);
-            height: clamp(24px, 6.5vw, 38px);
+            width: clamp(20px, 5.5vw, 32px);
+            height: clamp(20px, 5.5vw, 32px);
             flex-shrink: 0;
             filter: url(#penInk);
         }
 
         .stroke-svg path {
             stroke: var(--ink);
-            stroke-width: 3;
+            stroke-width: 2.5;
             fill: none;
             stroke-linecap: round;
             stroke-linejoin: round;
@@ -197,35 +215,34 @@
 
         .stroke-svg .diag { stroke: var(--ink); }
 
-
-        /* ── Trash can ── */
-        .team-footer {
+        /* ── Botones undo ── */
+        .paper-undos {
+            display: flex;
             flex-shrink: 0;
-            border-top: 1px solid var(--border);
-            padding: clamp(6px, 1.3vh, 10px);
+            padding: clamp(3px, 0.7vh, 6px) 0;
+            border-top: 1.5px solid var(--ink-pen);
+        }
+
+        .paper-undo-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #c0392b;
+            font-size: 0.9rem;
+            touch-action: manipulation;
             display: flex;
             justify-content: center;
-            background: #fafafa;
         }
-
-        .btn-trash {
-            background: none;
-            border: 1.5px solid #e0d8d0;
-            border-radius: 8px;
-            padding: 7px 22px;
-            cursor: pointer;
-            color: var(--muted);
-            font-size: 1rem;
-            touch-action: manipulation;
-        }
-        .btn-trash:active { background: #fef0f0; border-color: var(--ink-diag); color: var(--ink-diag); }
+        .paper-undo-btn:active { opacity: 0.7; }
 
         /* ── Overlay base ── */
         .overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(20, 35, 60, 0.72);
+            background: rgba(20, 35, 60, 0.65);
             z-index: 200;
             align-items: center;
             justify-content: center;
@@ -246,11 +263,11 @@
 
         /* ── Setup ── */
         .setup-title {
+            font-family: 'Caveat', cursive;
             font-size: 1.9rem;
-            font-weight: 800;
-            color: var(--accent);
+            font-weight: 700;
+            color: var(--ink);
             letter-spacing: 5px;
-            text-transform: uppercase;
             margin-bottom: 4px;
         }
 
@@ -269,7 +286,7 @@
 
         .setup-btn {
             background: #f4f4f6;
-            border: 2px solid var(--border);
+            border: 2px solid #ddd;
             border-radius: 12px;
             padding: 16px 8px;
             cursor: pointer;
@@ -277,14 +294,15 @@
             transition: background 0.12s, border-color 0.12s;
             font-family: 'Inter', sans-serif;
         }
-        .setup-btn:active { background: var(--accent); border-color: var(--accent); }
+        .setup-btn:active { background: var(--ink); border-color: var(--ink); }
         .setup-btn:active .opt-total { color: #fff; }
         .setup-btn:active .opt-sub   { color: rgba(255,255,255,0.65); }
 
         .opt-total {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--accent);
+            font-family: 'Caveat', cursive;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--ink);
             display: block;
         }
 
@@ -297,9 +315,7 @@
         }
 
         /* ── Modal "en buenas" ── */
-        #buenas-overlay .modal-card {
-            border-top: 5px solid var(--buenas-col);
-        }
+        #buenas-overlay .modal-card { border-top: 5px solid var(--buenas-col); }
 
         .buenas-icon { font-size: 2.6rem; margin-bottom: 10px; }
 
@@ -313,7 +329,8 @@
         }
 
         .buenas-team {
-            font-size: 1.55rem;
+            font-family: 'Caveat', cursive;
+            font-size: 1.7rem;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 22px;
@@ -336,17 +353,15 @@
         .btn-buenas-ok:active { opacity: 0.85; }
 
         /* ── Modal ganador ── */
-        #winner-overlay {
-            flex-direction: column;
-            gap: 18px;
-        }
+        #winner-overlay { flex-direction: column; gap: 18px; }
 
         .winner-emoji { font-size: 3.5rem; margin-bottom: 10px; }
 
         .winner-text {
-            font-size: clamp(1.4rem, 6vw, 2rem);
-            font-weight: 800;
-            color: var(--accent);
+            font-family: 'Caveat', cursive;
+            font-size: clamp(1.6rem, 7vw, 2.4rem);
+            font-weight: 700;
+            color: var(--ink);
             margin-bottom: 6px;
         }
 
@@ -359,7 +374,7 @@
         }
 
         .btn-nueva {
-            background: var(--accent);
+            background: var(--ink);
             color: white;
             border: none;
             font-family: 'Inter', sans-serif;
@@ -377,7 +392,7 @@
 </head>
 <body>
 
-<!-- Filtro SVG: simula trazo de lapicera con irregularidad -->
+<!-- Filtro SVG: trazo de lapicera irregular -->
 <svg class="filters">
     <defs>
         <filter id="penInk" x="-15%" y="-15%" width="130%" height="130%">
@@ -392,48 +407,51 @@
     <button class="btn-reset" onclick="confirmReset()">↺ Nueva</button>
 </header>
 
-<div class="game-area">
+<div class="paper">
 
-    <!-- Equipo 0 -->
-    <div class="team-card">
-        <div class="team-header" onclick="editName(0)">
-            <span class="team-name" id="name-0">Nosotros</span>
-            <div class="score-count" id="count-0">0 / 30</div>
+    <!-- Nombres -->
+    <div class="paper-names">
+        <div class="paper-name">
+            <span id="name-0">Nosotros</span>
         </div>
-        <div class="score-body" onclick="addPoint(0)">
-            <div class="score-section malas-sec">
-                <div class="section-label">Malas</div>
-                <div class="section-groups" id="groups-malas-0"></div>
-            </div>
-            <div class="score-section buenas-sec">
-                <div class="section-label">Buenas</div>
-                <div class="section-groups" id="groups-buenas-0"></div>
-            </div>
-        </div>
-        <div class="team-footer">
-            <button class="btn-trash" onclick="undoPoint(0)">🗑</button>
+        <div class="paper-name">
+            <span id="name-1">Ellos</span>
         </div>
     </div>
 
-    <!-- Equipo 1 -->
-    <div class="team-card">
-        <div class="team-header" onclick="editName(1)">
-            <span class="team-name" id="name-1">Ellos</span>
-            <div class="score-count" id="count-1">0 / 30</div>
+    <!-- Contadores (no tapeables para puntos) -->
+    <div class="paper-counts">
+        <div class="paper-count"><span class="score-count" id="count-0"></span></div>
+        <div class="paper-count"><span class="score-count" id="count-1"></span></div>
+    </div>
+
+    <!-- Malas -->
+    <div class="paper-row">
+        <div class="p-section" onclick="addPoint(0)">
+            <div class="section-groups" id="groups-malas-0"></div>
         </div>
-        <div class="score-body" onclick="addPoint(1)">
-            <div class="score-section malas-sec">
-                <div class="section-label">Malas</div>
-                <div class="section-groups" id="groups-malas-1"></div>
-            </div>
-            <div class="score-section buenas-sec">
-                <div class="section-label">Buenas</div>
-                <div class="section-groups" id="groups-buenas-1"></div>
-            </div>
+        <div class="p-section" onclick="addPoint(1)">
+            <div class="section-groups" id="groups-malas-1"></div>
         </div>
-        <div class="team-footer">
-            <button class="btn-trash" onclick="undoPoint(1)">🗑</button>
+    </div>
+
+    <!-- Línea horizontal lapicera -->
+    <div class="h-divider"></div>
+
+    <!-- Buenas -->
+    <div class="paper-row">
+        <div class="p-section" onclick="addPoint(0)">
+            <div class="section-groups" id="groups-buenas-0"></div>
         </div>
+        <div class="p-section" onclick="addPoint(1)">
+            <div class="section-groups" id="groups-buenas-1"></div>
+        </div>
+    </div>
+
+    <!-- Undo -->
+    <div class="paper-undos">
+        <button class="paper-undo-btn" onclick="undoPoint(0)">🗑</button>
+        <button class="paper-undo-btn" onclick="undoPoint(1)">🗑</button>
     </div>
 
 </div>
@@ -496,7 +514,7 @@ let state = {
     ]
 };
 
-// ── SVG cuadrado: 4 lados + diagonal (5º punto) ──────────────────────────────
+// ── SVG palitos ───────────────────────────────────────────────────────────────
 
 function getGroupSVG(count) {
     const sides = [
@@ -510,10 +528,6 @@ function getGroupSVG(count) {
     return `<svg class="stroke-svg" viewBox="0 0 40 40">${p}</svg>`;
 }
 
-function getEmptyBlockSVG() {
-    return `<svg class="stroke-svg" viewBox="0 0 40 40"></svg>`;
-}
-
 // ── Render ────────────────────────────────────────────────────────────────────
 
 function renderSection(teamIdx, section, pts, totalBlocks) {
@@ -521,10 +535,15 @@ function renderSection(teamIdx, section, pts, totalBlocks) {
     const fullGroups = Math.floor(pts / 5);
     const remainder  = pts % 5;
     let html = '';
-    for (let i = 0; i < fullGroups; i++) html += getGroupSVG(5);
-    if (remainder > 0) html += getGroupSVG(remainder);
-    const used = fullGroups + (remainder > 0 ? 1 : 0);
-    for (let i = used; i < totalBlocks; i++) html += getEmptyBlockSVG();
+    for (let i = 0; i < totalBlocks; i++) {
+        if (i < fullGroups) {
+            html += `<div class="slot">${getGroupSVG(5)}</div>`;
+        } else if (i === fullGroups && remainder > 0) {
+            html += `<div class="slot">${getGroupSVG(remainder)}</div>`;
+        } else {
+            html += `<div class="slot"></div>`;
+        }
+    }
     container.innerHTML = html;
 }
 
