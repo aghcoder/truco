@@ -195,7 +195,8 @@
             stroke-linejoin: round;
         }
 
-        .stroke-svg .diag { stroke: var(--ink-diag); }
+        .stroke-svg .diag { stroke: var(--ink); }
+
 
         /* ── Trash can ── */
         .team-footer {
@@ -485,8 +486,10 @@
 
 <script>
 let state = {
-    maxPoints:  null,
-    halfPoints: null,
+    maxPoints:    null,
+    halfPoints:   null,
+    malaBlocks:   null,
+    buenasBlocks: null,
     teams: [
         { name: 'Nosotros', points: 0, buenasShown: false },
         { name: 'Ellos',    points: 0, buenasShown: false }
@@ -507,15 +510,21 @@ function getGroupSVG(count) {
     return `<svg class="stroke-svg" viewBox="0 0 40 40">${p}</svg>`;
 }
 
+function getEmptyBlockSVG() {
+    return `<svg class="stroke-svg" viewBox="0 0 40 40"></svg>`;
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 
-function renderSection(teamIdx, section, pts) {
+function renderSection(teamIdx, section, pts, totalBlocks) {
     const container  = document.getElementById(`groups-${section}-${teamIdx}`);
     const fullGroups = Math.floor(pts / 5);
     const remainder  = pts % 5;
     let html = '';
     for (let i = 0; i < fullGroups; i++) html += getGroupSVG(5);
     if (remainder > 0) html += getGroupSVG(remainder);
+    const used = fullGroups + (remainder > 0 ? 1 : 0);
+    for (let i = used; i < totalBlocks; i++) html += getEmptyBlockSVG();
     container.innerHTML = html;
 }
 
@@ -523,12 +532,11 @@ function renderScores(teamIdx) {
     if (!state.maxPoints) return;
     const pts  = state.teams[teamIdx].points;
     const half = state.halfPoints;
-    const max  = state.maxPoints;
 
-    renderSection(teamIdx, 'malas',  Math.min(pts, half));
-    renderSection(teamIdx, 'buenas', Math.max(0, pts - half));
+    renderSection(teamIdx, 'malas',  Math.min(pts, half),     state.malaBlocks);
+    renderSection(teamIdx, 'buenas', Math.max(0, pts - half), state.buenasBlocks);
 
-    document.getElementById(`count-${teamIdx}`).textContent = `${pts} / ${max}`;
+    document.getElementById(`count-${teamIdx}`).textContent = `${pts} / ${state.maxPoints}`;
 }
 
 // ── Acciones ──────────────────────────────────────────────────────────────────
@@ -594,8 +602,10 @@ function confirmReset() {
 }
 
 function startGame(points) {
-    state.maxPoints  = points;
-    state.halfPoints = points / 2;
+    state.maxPoints    = points;
+    state.halfPoints   = points / 2;
+    state.malaBlocks   = (points / 2) / 5;
+    state.buenasBlocks = (points / 2) / 5;
     state.teams.forEach(t => { t.points = 0; t.buenasShown = false; });
     closeOverlay('setup-overlay');
     renderAll();
@@ -656,8 +666,10 @@ function loadState() {
         const p = JSON.parse(saved);
         if (!Array.isArray(p.teams) || p.teams.length !== 2) return;
         state = {
-            maxPoints:  p.maxPoints  || null,
-            halfPoints: p.halfPoints || null,
+            maxPoints:    p.maxPoints    || null,
+            halfPoints:   p.halfPoints   || null,
+            malaBlocks:   p.malaBlocks   || null,
+            buenasBlocks: p.buenasBlocks || null,
             teams: p.teams.map(t => ({
                 name:        t.name        || 'Equipo',
                 points:      t.points      || 0,
