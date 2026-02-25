@@ -29,8 +29,8 @@
                 var(--ruled) calc(var(--ruled-h) - 1px),
                 var(--ruled) var(--ruled-h)
             );
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
+            height: 100vh;
+            height: 100dvh;
             color: var(--text);
             overflow: hidden;
             display: flex;
@@ -169,7 +169,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
-            overflow: hidden;
+            overflow: visible;
         }
 
         /* Línea horizontal de lapicera (malas / buenas) */
@@ -183,24 +183,24 @@
         .section-groups {
             flex: 1;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: visible;
+            display: grid;
+            /* grid-template-rows se setea por JS: repeat(N, tamaño-fijo) */
+            gap: clamp(8px, 2vw, 16px);
+            align-content: start;
+            justify-items: center;
+            min-height: 0;
         }
 
-        /* Cada slot ocupa una fracción igual del alto, centrado */
+        /* Slot — tamaño fijo seteado por JS según sección y N bloques */
         .slot {
-            flex: 1;
-            min-height: clamp(18px, 4vh, 36px);
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: visible;
         }
 
-        /* ── SVG palitos ── */
+        /* ── SVG palitos — tamaño seteado por JS ── */
         .stroke-svg {
-            width: clamp(20px, 5.5vw, 32px);
-            height: clamp(20px, 5.5vw, 32px);
             flex-shrink: 0;
             filter: url(#penInk);
         }
@@ -403,7 +403,6 @@
 </svg>
 
 <header>
-    <h1>Truco</h1>
     <button class="btn-reset" onclick="confirmReset()">↺ Nueva</button>
 </header>
 
@@ -508,6 +507,7 @@ let state = {
     halfPoints:   null,
     malaBlocks:   null,
     buenasBlocks: null,
+    _bSize:       null,
     teams: [
         { name: 'Nosotros', points: 0, buenasShown: false },
         { name: 'Ellos',    points: 0, buenasShown: false }
@@ -516,7 +516,7 @@ let state = {
 
 // ── SVG palitos ───────────────────────────────────────────────────────────────
 
-function getGroupSVG(count) {
+function getGroupSVG(count, size) {
     const sides = [
         `<path d="M8,8 L32,8"/>`,      // top
         `<path d="M32,8 L32,32"/>`,    // right
@@ -525,23 +525,55 @@ function getGroupSVG(count) {
     ];
     let p = sides.slice(0, count).join('');
     if (count === 5) p += `<path class="diag" d="M8,8 L32,32"/>`;
-    return `<svg class="stroke-svg" viewBox="0 0 40 40">${p}</svg>`;
+    return `<svg class="stroke-svg" viewBox="0 0 40 40" width="${size}" height="${size}">${p}</svg>`;
+}
+
+// Calcula bSize desde la altura total del paper para que todo sea proporcional:
+// - Nombres y contadores: cada fila tiene altura = bSize
+// - Cada sección: N bloques de bSize + (N-1) gaps de 8px
+// Fórmula: paperH = 2*bSize + 2*(N*bSize + (N-1)*8 + secPad) + divH + undoH
+function computeBlockSize() {
+    if (state._bSize) return state._bSize;
+    if (!state.malaBlocks) return 40;
+    const paperEl  = document.querySelector('.paper');
+    const undoEl   = document.querySelector('.paper-undos');
+    const divEl    = document.querySelector('.h-divider');
+    const pSection = document.querySelector('.p-section');
+    if (!paperEl) return 40;
+    const undoH  = undoEl   ? undoEl.offsetHeight  : 40;
+    const divH   = divEl    ? divEl.offsetHeight    : 2;
+    const secPad = pSection ?
+        parseFloat(getComputedStyle(pSection).paddingTop) +
+        parseFloat(getComputedStyle(pSection).paddingBottom) : 16;
+    const N     = state.malaBlocks;
+    const fixed = 2 * secPad + 8 * (N - 1) * 2 + divH + undoH;
+    const bSize = Math.max(20, Math.floor((paperEl.clientHeight - fixed) / (2 * (N + 1))));
+    state._bSize = bSize;
+    return bSize;
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
 function renderSection(teamIdx, section, pts, totalBlocks) {
     const container  = document.getElementById(`groups-${section}-${teamIdx}`);
+    const bSize      = computeBlockSize();
+    const gap        = 8;
+    const svgSz      = Math.round(bSize * 0.82);
+
+    container.style.gridTemplateRows = `repeat(${totalBlocks}, ${bSize}px)`;
+    container.style.gap              = `${gap}px`;
+
     const fullGroups = Math.floor(pts / 5);
     const remainder  = pts % 5;
     let html = '';
     for (let i = 0; i < totalBlocks; i++) {
+        const sty = `width:${bSize}px;height:${bSize}px`;
         if (i < fullGroups) {
-            html += `<div class="slot">${getGroupSVG(5)}</div>`;
+            html += `<div class="slot" style="${sty}">${getGroupSVG(5, svgSz)}</div>`;
         } else if (i === fullGroups && remainder > 0) {
-            html += `<div class="slot">${getGroupSVG(remainder)}</div>`;
+            html += `<div class="slot" style="${sty}">${getGroupSVG(remainder, svgSz)}</div>`;
         } else {
-            html += `<div class="slot"></div>`;
+            html += `<div class="slot" style="${sty}"></div>`;
         }
     }
     container.innerHTML = html;
@@ -611,6 +643,7 @@ function newGame() {
     closeOverlay('winner-overlay');
     state.maxPoints  = null;
     state.halfPoints = null;
+    state._bSize     = null;
     state.teams.forEach(t => { t.points = 0; t.buenasShown = false; });
     saveState();
     showOverlay('setup-overlay');
@@ -625,10 +658,13 @@ function startGame(points) {
     state.halfPoints   = points / 2;
     state.malaBlocks   = (points / 2) / 5;
     state.buenasBlocks = (points / 2) / 5;
+    state._bSize       = null;
     state.teams.forEach(t => { t.points = 0; t.buenasShown = false; });
     closeOverlay('setup-overlay');
-    renderAll();
-    saveState();
+    requestAnimationFrame(() => {
+        renderAll();
+        saveState();
+    });
 }
 
 // ── Editar nombre ─────────────────────────────────────────────────────────────
@@ -667,6 +703,27 @@ function editName(teamIdx) {
 // ── Persistencia ──────────────────────────────────────────────────────────────
 
 function renderAll() {
+    if (!state.maxPoints) return;
+    const bSize     = computeBlockSize();
+    const nameFont  = `min(${Math.round(bSize * 0.55)}px, 11vw)`;
+    const countFont = `min(${Math.round(bSize * 0.38)}px, 7.5vw)`;
+
+    // Filas de nombres y contadores: misma altura que un bloque
+    const namesRow  = document.querySelector('.paper-names');
+    const countsRow = document.querySelector('.paper-counts');
+    if (namesRow)  { namesRow.style.height  = bSize + 'px'; namesRow.style.alignItems  = 'center'; }
+    if (countsRow) { countsRow.style.height = bSize + 'px'; countsRow.style.alignItems = 'center'; }
+
+    document.querySelectorAll('.paper-name span, .paper-name .team-name').forEach(el => {
+        el.style.fontSize = nameFont;
+    });
+    document.querySelectorAll('.score-count').forEach(el => {
+        el.style.fontSize = countFont;
+    });
+    document.querySelectorAll('.paper-undo-btn').forEach(el => {
+        el.style.fontSize = nameFont;
+    });
+
     [0, 1].forEach(i => {
         const el = document.getElementById(`name-${i}`);
         if (el) el.textContent = state.teams[i].name;
@@ -701,8 +758,11 @@ function loadState() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 loadState();
-renderAll();
-if (!state.maxPoints) showOverlay('setup-overlay');
+if (!state.maxPoints) {
+    showOverlay('setup-overlay');
+} else {
+    requestAnimationFrame(() => renderAll());
+}
 </script>
 </body>
 </html>
