@@ -227,19 +227,110 @@ Analizando la solución...
 ```
 
 ---
+Estás construyendo la UI de un marcador de Truco Uruguayo para Android (portrait mode únicamente).
+NO es una web app. Todo el diseño debe estar optimizado para pantalla de celular Android.
 
-## RESTRICCIONES
-- No hagas preguntas antes de empezar, arrancá directo
-- No expliques lo que vas a hacer, hacelo
-- No generes reportes, diagramas ni documentación
-- Si hay ambigüedad en si algo es crítico o no, tratalo como crítico y corregilo
-- Al terminar todo, preguntá: ¿Querés que resuelva también los de riesgo medio?
+═══════════════════════════════════════
+ESTRUCTURA GENERAL
+═══════════════════════════════════════
 
-REGLAS DE NEGOCIO, ARREGLAR LA UI PARA ANDROID
-1) 10 + 10, habra en la seccion de  malas lugar para 2 bloques de 5 puntos y  habra en la seccion de  malas lugar para 2 bloques de 5 puntosbuenas 
-2) 20 + 20, habra en la seccion de  malas lugar para 4 bloques de 5 puntos y  habra en la seccion de  malas lugar para 4 bloques de 5 puntosbuenas 
-3) 25 + 25, habra en la seccion de  malas lugar para 5 bloques de 5 puntos y  habra en la seccion de  malas lugar para 5 bloques de 5 puntosbuenas 
----
-4) cada tap es un solo punto, todos los puntos son del mismo color, el tap solo dentro de la seccion malas y buenas
-5) hay un trashcan en una seccion debajo todo que resta de a un punto
-6) hay una seccion de header con los nombres de los equipos nosotros y ellos , y la cantidad de puntos actual/total, no tienen ningun comportamiento si se clickean o se tapean
+- Layout de 2 columnas simétricas: izquierda = "Nosotros", derecha = "Ellos"
+- Ambas columnas son idénticas en estructura y comportamiento
+- Cada columna tiene 4 zonas de arriba hacia abajo:
+  1. Header
+  2. Sección Malas
+  3. Sección Buenas
+  4. Trashcan
+
+═══════════════════════════════════════
+UNIDAD BASE: BLOQUE DE 5 PUNTOS
+═══════════════════════════════════════
+
+Todo el layout se dimensiona en función de UNA unidad base: el tamaño de un bloque de 5 puntos.
+- Header height = 1 bloque de 5 puntos
+- Trashcan height = 1 bloque de 5 puntos
+- Gap entre bloques = mínimo
+- El tamaño del bloque NUNCA cambia al agregar o quitar puntos.
+  Solo cambia al cambiar el modo de juego.
+
+═══════════════════════════════════════
+MODOS DE JUEGO
+═══════════════════════════════════════
+
+Modo 10+10 → 2 bloques en Malas + 2 bloques en Buenas por columna
+Modo 20+20 → 4 bloques en Malas + 4 bloques en Buenas por columna
+Modo 25+25 → 5 bloques en Malas + 5 bloques en Buenas por columna
+
+Cada bloque siempre representa exactamente 5 puntos.
+
+═══════════════════════════════════════
+HEADER
+═══════════════════════════════════════
+
+- Muestra: nombre del equipo (Nosotros / Ellos) y puntuación en formato "actual/total" (ej: 7/25)
+- Sin ningún comportamiento interactivo. Ningún tap, ningún click, ninguna acción.
+- Height = altura de un bloque de 5 puntos (hardcodeado, no dinámico)
+
+═══════════════════════════════════════
+LAYOUT DE BLOQUES — REGLA ABSOLUTA
+═══════════════════════════════════════
+
+⚠️ NUNCA usar justify-content, align-items center/space-between, o cualquier
+   distribución vertical. El espacio vacío SIEMPRE queda abajo. SIEMPRE.
+
+- Los bloques arrancan desde el borde superior de su sección (top: 0)
+- Se apilan hacia abajo con gap mínimo
+- El espacio vacío es un espacio muerto en la parte inferior
+- Los bloques están centrados horizontalmente dentro de su columna
+- La distancia del último bloque al borde inferior de la sección
+  es como máximo la altura de un bloque de 5 puntos
+
+Sección Malas:
+  → Primer bloque pegado al borde superior, debajo del header
+  → Los siguientes apilados hacia abajo con gap mínimo
+
+Sección Buenas:
+  → Primer bloque pegado al borde superior, debajo de la línea divisoria Malas/Buenas
+  → Los siguientes apilados hacia abajo con gap mínimo
+
+═══════════════════════════════════════
+COMPORTAMIENTO DE PUNTOS
+═══════════════════════════════════════
+
+- Cada tap DENTRO de la sección Malas o Buenas = +1 punto exacto
+- Tap fuera de estas secciones = ninguna acción
+- Los puntos se registran siempre de arriba hacia abajo dentro del bloque,
+  y de bloque superior a inferior dentro de la sección
+- Todos los puntos son del mismo color, sin distinción visual
+- Se llenan primero todos los puntos de Malas, luego los de Buenas
+- No se puede saltar de sección ni adelantar puntos en Buenas si Malas no está completa
+- Un tap en la zona vacía inferior de una sección no suma puntos
+  si esa sección ya está completa
+
+═══════════════════════════════════════
+TRASHCAN
+═══════════════════════════════════════
+
+- Uno por columna, debajo de la sección Buenas
+- Height = altura de un bloque de 5 puntos (misma unidad base)
+- Width = mismo ancho que los bloques de 5 puntos, centrado horizontalmente
+- Cada tap = -1 punto del último punto anotado en esa columna
+- Orden inverso: si el último punto fue en Buenas, se resta de Buenas.
+  Si Buenas está vacía, se resta de Malas.
+
+═══════════════════════════════════════
+RESTRICCIONES CRÍTICAS — NO ROMPER
+═══════════════════════════════════════
+
+1. El tamaño del bloque NO se recalcula en cada render al agregar puntos.
+   Solo se recalcula cuando cambia el modo de juego.
+
+2. El espacio vacío al final de la sección NUNCA empuja bloques hacia el centro.
+   Implementar con position absolute o flex-start + padding-bottom fijo,
+   NUNCA con justify-content que distribuya el espacio.
+
+3. La altura del header está hardcodeada al valor de la unidad base (bloque de 5 puntos).
+   No depende del tamaño del texto ni es dinámica.
+
+4. Las secciones Malas y Buenas son táctiles solo cuando corresponde:
+   Malas acepta taps hasta completarse. Buenas solo acepta taps cuando Malas está completa.
