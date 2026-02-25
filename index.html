@@ -29,8 +29,8 @@
                 var(--ruled) calc(var(--ruled-h) - 1px),
                 var(--ruled) var(--ruled-h)
             );
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
+            height: 100vh;
+            height: 100dvh;
             color: var(--text);
             overflow: hidden;
             display: flex;
@@ -183,18 +183,22 @@
         .section-groups {
             flex: 1;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: visible;
+            display: grid;
+            /* grid-template-rows se setea por JS: repeat(N, tamaño-fijo) */
+            gap: clamp(8px, 2vw, 16px);
+            align-content: center;
+            justify-items: center;
+            min-height: 0;
         }
 
-        /* Cada slot ocupa una fracción igual del alto, centrado */
+        /* Slot = mismo tamaño que el SVG, nunca cambia */
         .slot {
-            flex: 1;
-            min-height: clamp(18px, 4vh, 36px);
+            width: clamp(24px, 6.5vw, 38px);
+            height: clamp(24px, 6.5vw, 38px);
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: visible;
         }
 
         /* ── SVG palitos ── */
@@ -532,6 +536,7 @@ function getGroupSVG(count) {
 
 function renderSection(teamIdx, section, pts, totalBlocks) {
     const container  = document.getElementById(`groups-${section}-${teamIdx}`);
+    container.style.gridTemplateRows = `repeat(${totalBlocks}, clamp(24px, 6.5vw, 38px))`;
     const fullGroups = Math.floor(pts / 5);
     const remainder  = pts % 5;
     let html = '';

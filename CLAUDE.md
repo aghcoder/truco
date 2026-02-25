@@ -234,3 +234,12 @@ Analizando la solución...
 - No generes reportes, diagramas ni documentación
 - Si hay ambigüedad en si algo es crítico o no, tratalo como crítico y corregilo
 - Al terminar todo, preguntá: ¿Querés que resuelva también los de riesgo medio?
+
+REGLAS DE NEGOCIO, ARREGLAR LA UI PARA ANDROID
+1) 10 + 10, habra en la seccion de  malas lugar para 2 bloques de 5 puntos y  habra en la seccion de  malas lugar para 2 bloques de 5 puntosbuenas 
+2) 20 + 20, habra en la seccion de  malas lugar para 4 bloques de 5 puntos y  habra en la seccion de  malas lugar para 4 bloques de 5 puntosbuenas 
+3) 25 + 25, habra en la seccion de  malas lugar para 5 bloques de 5 puntos y  habra en la seccion de  malas lugar para 5 bloques de 5 puntosbuenas 
+---
+4) cada tap es un solo punto, todos los puntos son del mismo color, el tap solo dentro de la seccion malas y buenas
+5) hay un trashcan en una seccion debajo todo que resta de a un punto
+6) hay una seccion de header con los nombres de los equipos nosotros y ellos , y la cantidad de puntos actual/total, no tienen ningun comportamiento si se clickean o se tapean
