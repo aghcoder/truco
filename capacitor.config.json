@@ -4,8 +4,10 @@
   "webDir": "www",
   "android": {
     "buildOptions": {
-      "keystorePath": null,
-      "keystoreAlias": null
+      "keystorePath": "my-release-key.keystore",
+      "keystoreAlias": "my-key-alias",
+      "keystorePassword": "20260224",
+      "keystoreAliasPassword": "20260224"
     }
   },
   "plugins": {
