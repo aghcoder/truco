@@ -1,336 +1,326 @@
-# CLAUDE.md
+# CLAUDE.md — Truco Uruguayo
+> Contexto maestro leído por TODOS los agentes en cada sesión.
+> Actualizar solo el Senior Dev / PO cuando cambie arquitectura o convenciones.
+> Última actualización: 2025
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+---
 
-## Project Overview
+## 🎯 Proyecto
 
-**Truco Uruguayo** - A mobile score-tracking app for the traditional South American card game Truco. Built as a single-page app packaged as an Android APK via Capacitor.
+**Nombre:** Truco Uruguayo  
+**App ID:** `com.truco.uruguayo`  
+**Descripción:** App mobile de marcador para el juego de cartas Truco. Single-page app empaquetada como APK Android via Capacitor.  
+**Repo:** https://github.com/aghcoder/truco  
+**Estado:** Desarrollo activo en `develop`
 
-- App ID: `com.truco.uruguayo`
-- All app code lives in a single file: `index.html` (HTML + embedded CSS + embedded JS)
-- No build step required to run in a browser — just open `index.html`
+---
 
-## Commands
+## 👥 Actores del Sistema
 
-```bash
-npm install                  # Install Capacitor dependencies
-npx cap add android          # Add Android platform (first time only)
-npx cap sync android         # Sync web files to native Android project
-npx cap open android         # Open in Android Studio to build APK
-npx cap run android          # Run on connected Android device
+### Humanos
+| Actor | Rol | Responsabilidad |
+|-------|-----|-----------------|
+| PO | Product Owner | Define features en `docs/PRD.md`, aprueba releases, hace UAT, dice "mandá a UAT" |
+| Senior Dev | Orchestrator | Revisa código generado, aprueba arquitectura, decide trade-offs |
+
+> En este proyecto el PO y el Senior Dev son la misma persona.
+> Cuando hay conflicto entre velocidad y calidad → priorizar calidad (es una app publicada).
+
+### Agentes IA
+| Agente | Archivo de configuración | Carpeta de outputs |
+|--------|--------------------------|-------------------|
+| Dev Agent | `.claude/agents/dev-agent.md` | `c:\truco\docs\dev-agent\` |
+| QA Agent | `.claude/agents/qa-agent.md` | `c:\truco\docs\qa-agent\` |
+| Review Agent | `.claude/agents/review-agent.md` | `c:\truco\docs\review-agent\` |
+| Docs Agent | `.claude/agents/docs-agent.md` | `c:\truco\docs\docs-agent\` |
+
+---
+
+## 🏗️ Arquitectura
+
+### Stack real
+```
+App:        Single HTML file (index.html) — HTML + CSS + JS embebido
+Empaquetado: Capacitor → Android APK
+Plataforma: Android únicamente, portrait mode
+Storage:    localStorage (persistencia de estado)
+Fuentes:    Google Fonts (Rye, Crimson Pro) — cargadas online
+No hay:     backend, base de datos, build step, bundler, framework JS
 ```
 
-To build the APK: after `npx cap open android`, use **Build → Build APK(s)** in Android Studio. Output: `android/app/build/outputs/apk/debug/app-debug.apk`.
+### Estructura del repo
+```
+c:\truco\
+├── index.html          ← TODO el código vive acá (HTML + CSS + JS)
+├── CLAUDE.md           ← este archivo
+├── package.json        ← solo Capacitor dependencies
+├── capacitor.config.ts ← config de Capacitor
+├── android/            ← proyecto Android generado por Capacitor
+│   └── app/build/outputs/apk/debug/app-debug.apk
+├── docs/               ← documentación del proyecto
+│   ├── PRD.md
+│   ├── DECISIONS.md
+│   └── CHANGELOG.md
+└── .claude/
+    ├── agents/
+    │   ├── dev-agent.md
+    │   ├── qa-agent.md
+    │   ├── review-agent.md
+    │   └── docs-agent.md
+    └── commands/
+        ├── feature.md
+        ├── review.md
+        ├── test.md
+        └── ship.md
+```
 
-## Architecture
+> ⚠️ `index.html` es el único archivo de aplicación. No crear archivos `.js`, `.css` separados salvo que el Senior Dev lo autorice explícitamente.
 
-The entire application is in `index.html` with three sections:
-
-**State (JS global object):**
+### Estado de la app (JS global)
 ```js
 let state = {
     teams: [
         { name: 'Nosotros', points: 0, malas: [false, false, false] },
-        { name: 'Ellos', points: 0, malas: [false, false, false] }
+        { name: 'Ellos',    points: 0, malas: [false, false, false] }
     ]
 }
+// Persistido en localStorage via saveState() / loadState()
 ```
-State is persisted to `localStorage` on every change via `saveState()` / `loadState()`.
 
-**Core functions:**
-- `addPoint(teamIdx)` / `undoPoint(teamIdx)` — mutate state and re-render
-- `renderScores(teamIdx)` — generates SVG stroke marks (palitos): groups of 4 verticals + 1 diagonal at point 5 (the "morcilla")
-- `editName(teamIdx)` — inline team name editing
-- `toggleMala(teamIdx, dotIdx)` — toggle malas indicators (3 per team)
-- `showWinner(teamIdx)` / `newGame()` — winner overlay and game reset
+### Funciones core
+| Función | Qué hace |
+|---------|----------|
+| `addPoint(teamIdx)` | +1 punto, muta state, re-render |
+| `undoPoint(teamIdx)` | -1 punto (trashcan), orden inverso Buenas→Malas |
+| `renderScores(teamIdx)` | SVG de palitos: grupos 4 verticales + 1 diagonal (morcilla) |
+| `editName(teamIdx)` | Edición inline del nombre del equipo |
+| `toggleMala(teamIdx, dotIdx)` | Toggle de indicadores de malas (3 por equipo) |
+| `showWinner(teamIdx)` | Overlay de ganador |
+| `newGame()` | Reset completo |
 
-**Visual design constants:**
-- Green felt: `#0a4028`, gold: `#d4af37`, blue ink (strokes): `#2c5aa0`, red malas: `#c41e3a`
-- Fonts: Rye (headings), Crimson Pro (body) — loaded from Google Fonts
-- SVG `feTurbulence` filter gives strokes a hand-drawn texture
-- Win condition: 30 points
+### Constantes visuales (NO cambiar sin aprobación)
+```
+Verde fieltro:  #0a4028
+Oro:            #d4af37
+Azul tinta:     #2c5aa0   (palitos/strokes)
+Rojo malas:     #c41e3a
+Fuentes:        Rye (títulos), Crimson Pro (cuerpo)
+SVG filter:     feTurbulence — da textura hand-drawn a los palitos
+Condición win:  30 puntos
+```
 
-## Planned Features (from README)
+### Modos de juego
+| Modo | Bloques Malas | Bloques Buenas | Total puntos |
+|------|---------------|----------------|--------------|
+| 10+10 | 2 bloques | 2 bloques | 20 |
+| 20+20 | 4 bloques | 4 bloques | 40 |
+| 25+25 | 5 bloques | 5 bloques | 50 |
 
-- [ ] Custom app icon
-- [ ] Splash screen customization
-- [ ] Match history
-- [ ] Light/dark mode
-- [ ] Sound effects on point addition
-- [ ] Win animations
+Cada bloque = exactamente 5 puntos.
 
+---
 
+## 📐 Reglas de diseño UI — CRÍTICAS
 
+> Estas reglas son restricciones absolutas. No se negocian.
 
--------------------------------------------------------------
-# Instrucciones de Git y Gestión de Ramas
+1. **Portrait mode únicamente** — nunca landscape
+2. **Layout 2 columnas simétricas** — izquierda: Nosotros, derecha: Ellos
+3. **Zonas por columna (top→bottom):** Header → Malas → Buenas → Trashcan
+4. **Espacio vacío SIEMPRE abajo** — NUNCA usar `justify-content: center/space-between`
+   - Usar `flex-start` + `padding-bottom` fijo, o `position: absolute`
+5. **Tamaño de bloque fijo** — NO recalcular al agregar puntos, SOLO al cambiar modo
+6. **Header height** = altura de un bloque de 5 puntos (hardcodeado, no dinámico)
+7. **Trashcan:** 1 por columna, height = 1 bloque, tap = -1 punto (Buenas primero, luego Malas)
+8. **Tap en zona vacía inferior** → no suma puntos si la sección está completa
+9. **Malas se llena ANTES que Buenas** — no se puede adelantar puntos
 
-## Flujo de trabajo Git
+---
 
-### Repositorio
-- **Remote:** https://github.com/aghcoder/unami
+## 🔧 Comandos del proyecto
 
-### Estructura de ramas
-
-| Rama      | Uso                              | Se modifica desde |
-|-----------|----------------------------------|-------------------|
-| `develop` | Desarrollo activo ← RAMA DE TRABAJO | Directo       |
-| `stage`   | UAT / pre-producción             | Merge de develop  |
-| `main`    | Producción (no tocar sin avisar) | Solo cuando se indique |
-
-
-## Reglas generales
-- Todos los cambios de código se gestionan en el repositorio de GitHub ya configurado
-- NUNCA hacer cambios directamente en `main` o `stage`
-- Antes de cualquier cambio, verificar que estás en la rama correcta con `git branch`
-
-## Flujo de trabajo estándar
-
-### UNICAMENTE cuando diga subir a develop o similar mandar el codigo nuevo y los cambios sino mantener en localhost
-1. Posicionarse en `develop`: `git checkout develop`
-2. Hacer pull para tener la última versión: `git pull origin develop`
-3. Aplicar los cambios solicitados
-4. Hacer commit con mensaje descriptivo: `git commit -m "descripción del cambio"`
-5. Hacer push a develop: `git push origin develop`
-
-## Activación de pase a Stage / UAT
-Cuando el usuario diga alguna de estas frases (o similares):
-- "mandá a UAT"
-- "pasá a stage"  
-- "pase a UAT"
-- "deployá a stage"
-- "subí a UAT"
-- "promové a stage"
-- "listo para stage"
-
-### Ejecutar este flujo:
 ```bash
-# 1. Asegurarse que develop está actualizado
-git checkout develop
-git pull origin develop
+# Desarrollo
+# No hay build step — abrir index.html directamente en browser
 
-# 2. Cambiar a stage
-git checkout stage
+# Android
+npm install                  # instalar dependencias Capacitor
+npx cap sync android         # sincronizar web → Android
+npx cap open android         # abrir Android Studio
+npx cap run android          # correr en dispositivo conectado
 
-# 3. Pull de stage por si hay cambios
-git pull origin stage
+# Build APK
+# En Android Studio: Build → Build APK(s)
+# Output: android/app/build/outputs/apk/debug/app-debug.apk
+```
 
-# 4. Mergear develop en stage
+---
+
+## 🌿 Git & Ramas
+
+### Estructura
+| Rama | Uso | Cómo se modifica |
+|------|-----|-----------------|
+| `develop` | Desarrollo activo — **RAMA DE TRABAJO** | Directo |
+| `stage` | UAT / pre-producción | Merge desde develop |
+| `main` | Producción | Solo cuando PO lo indique |
+
+### Reglas absolutas de Git
+- **NUNCA** push directo a `main` sin confirmación explícita
+- Siempre verificar rama con `git branch` antes de cambiar código
+- Push a develop **solo cuando el PO diga "subir a develop"** (o similar)
+- Mantener en localhost hasta esa instrucción
+
+### Deploy a develop y stage — SIN confirmación
+Ejecutar directamente sin preguntar nada al recibir la instrucción del PO.
+
+### Deploy a main/producción — CONFIRMACIÓN OBLIGATORIA
+Antes de cualquier push a `main`, mostrar y esperar aprobación explícita:
+```
+⚠️  PUSH A PRODUCCIÓN
+Commits que se van a mergear: [lista]
+Archivos modificados: [lista]
+¿Confirmás el pase a main? (escribir "confirmo" para continuar)
+```
+
+### Prefijos de commit obligatorios
+```
+feat:      nueva funcionalidad
+fix:       corrección de bug
+style:     cambios visuales sin lógica
+refactor:  reestructuración sin cambio de comportamiento
+docs:      solo documentación
+chore:     mantenimiento (deps, config)
+```
+
+### Activación de pase a Stage/UAT
+Frases que activan el flujo: *"mandá a UAT", "pasá a stage", "pase a UAT", "deployá a stage", "subí a UAT", "promové a stage", "listo para stage"*
+
+```bash
+git checkout develop && git pull origin develop
+git checkout stage && git pull origin stage
 git merge develop --no-ff -m "merge: develop -> stage [UAT]"
-
-# 5. Push a stage
 git push origin stage
-
-# 6. Volver a develop para seguir trabajando
 git checkout develop
 ```
+**Antes de ejecutar:** mostrar commits que se van a mergear y pedir confirmación explícita.
 
-## Estructura de ramas
-| Rama      | Uso                              | Se modifica desde |
-|-----------|----------------------------------|-------------------|
-| `develop` | Desarrollo activo                | Directo           |
-| `stage`   | UAT / pre-producción             | Merge de develop  |
-| `main`    | Producción (no tocar sin avisar) | Solo cuando se indique |
+---
 
-## Mensajes de commit
-Usar prefijos descriptivos:
-- `feat:` para funcionalidades nuevas
-- `fix:` para correcciones
-- `style:` para cambios visuales
-- `refactor:` para refactorizaciones
-- `docs:` para documentación
-- `chore:` para tareas de mantenimiento
+## 🔍 Análisis automático de calidad (Mejora Continua)
 
-## Confirmación obligatoria
-Antes de ejecutar el pase a stage, mostrar al usuario:
-- Qué commits van a ser mergeados
-- Qué archivos cambiaron
-- Pedir confirmación explícita antes de hacer el push a `stage`
+En cada sesión de trabajo, analizar el código silenciosamente y aplicar este protocolo:
+
+### 🔴 Crítico → CORREGIR SIN PREGUNTAR
+- Aplicar el fix directamente, **sin romper ninguna funcionalidad existente del juego**
+- Hacer commit descriptivo
+- Reportar en una línea:
 ```
-# Análisis y Corrección Automática de la Solución
+✅ [index.html:línea] Problema encontrado → qué se corrigió
+```
 
-Actuás como un arquitecto de software senior. Tu misión NO es hacer reportes 
-ni diagramas. Tu misión es CORREGIR y EJECUTAR.
+### 🟠 Alta severidad → PREGUNTAR ANTES de tocar
+- NO modificar nada
+- Presentar el problema con la solución propuesta y esperar aprobación:
+```
+🟠 [index.html:línea] Problema: [descripción]
+   Solución propuesta: [qué se haría y por qué]
+   ¿Aprobás que lo corrija? (s/n)
+```
 
----
--------------------------------------------------------------
-## MEJORA CONTINUA
+### 🟡 Medio y 🟢 Bajo → SOLO LISTAR, preguntar si se quiere mejorar
+- NO modificar nada
+- Listar todos juntos al final y preguntar una sola vez:
+```
+🟡 [index.html:línea] Título del problema
+🟢 [index.html:línea] Título del problema
 
-Analizá toda la solución en silencio y seguí exactamente estas reglas:
+¿Querés que mejore alguno de estos? (indicar cuáles o "todos" / "ninguno")
+```
 
-### 🔴 CRÍTICOS y 🟠 SEVERIDAD ALTA → EJECUTAR SIN PREGUNTAR
-- Identificalos, corregilos y aplicá los cambios directamente en el código
-- Hacé commit de cada corrección con un mensaje descriptivo
-- Después de corregir cada uno, informá en UNA línea qué fue y qué hiciste:
-  `✅ [archivo:línea] Descripción del problema → qué se corrigió`
-
-### 🟡 RIESGO MEDIO y 🟢 RIESGO BAJO → SOLO UN TITULAR
-- No corrijas nada
-- Listá cada uno en una sola línea con este formato:
-  `🟡 [archivo:línea] Título del problema`
-  `🟢 [archivo:línea] Título del problema`
-
----
-
-## QUÉ ANALIZAR
-
-Revisá en este orden de prioridad:
-
-1. **Lógica y contradicciones** — condiciones imposibles, race conditions, 
-   casos borde sin manejar, reglas de negocio rotas
-
-2. **Base de datos** — queries N+1, transacciones ausentes, 
-   falta de índices críticos, riesgo de pérdida de datos
-
-3. **Seguridad** — credenciales expuestas, inputs sin sanitizar, 
-   endpoints sin protección, SQL injection, XSS
-
-4. **Performance** — loops costosos, llamadas bloqueantes, 
-   operaciones síncronas que rompen la experiencia
-
-5. **Arquitectura** — dependencias circulares, acoplamiento que 
-   impide que el sistema escale o se mantenga
-
-6. **Mantenibilidad** — código que activamente dificulta 
-   entender o modificar el sistema
-
----
-
-## CRITERIO DE CLASIFICACIÓN
+### Orden de análisis
+1. Lógica y casos borde (reglas de Truco, condiciones de victoria, puntuación)
+2. Storage (localStorage: corrupción, pérdida de datos, migración de estado)
+3. Seguridad (XSS en nombres de equipo — input del usuario)
+4. Performance (renders innecesarios, SVG bloqueante)
+5. Compatibilidad Android (touch events vs click, viewport, safe areas)
+6. Mantenibilidad (todo en un archivo — documentar bien qué hace cada sección)
 
 | Severidad | Criterio |
 |-----------|----------|
-| 🔴 Crítico | Puede romper el sistema, pérdida de datos o vulnerabilidad de seguridad explotable |
-| 🟠 Alta | Degrada seriamente la performance, lógica incorrecta que afecta el negocio |
-| 🟡 Media | Deuda técnica que acumula riesgo, mala práctica con impacto futuro |
-| 🟢 Baja | Mejora de código, legibilidad, convenciones |
+| 🔴 Crítico | Rompe el juego, pérdida de datos, crash en Android |
+| 🟠 Alta | Lógica incorrecta de puntuación, UX rota en dispositivo real |
+| 🟡 Media | Deuda técnica, mala práctica acumulable |
+| 🟢 Baja | Legibilidad, convenciones, comentarios |
 
 ---
 
-## FORMATO DE SALIDA ESPERADO
+## 📋 Checklist pre-merge
+
 ```
-Analizando la solución...
-
-— CORRECCIONES APLICADAS ——————————————————————
-✅ [auth.js:47] Token JWT sin expiración → agregado exp de 24hs
-✅ [userService.js:103] Query N+1 en listado de usuarios → reemplazado por JOIN
-✅ [db.js:12] Password de BD hardcodeada → movida a variable de entorno
-✅ [api.js:88] Endpoint /admin sin autenticación → agregado middleware auth
-...
-
-— PENDIENTE (riesgo medio/bajo) ————————————————
-🟡 [userController.js:34] Falta paginación en endpoint GET /users
-🟡 [helpers.js:78] Función de 200 líneas que debería dividirse
-🟢 [index.js:5] Variable llamada 'data' sin nombre descriptivo
-🟢 [styles.css:120] Reglas CSS duplicadas
-...
+[ ] index.html abre en browser sin errores de consola
+[ ] Los 3 modos de juego (10+10, 20+20, 25+25) funcionan correctamente
+[ ] Los palitos se renderizan correctamente en todos los casos
+[ ] El trashcan resta en orden correcto (Buenas → Malas)
+[ ] Los nombres de equipo se pueden editar
+[ ] El estado persiste al recargar (localStorage)
+[ ] La condición de victoria (30 pts) dispara el overlay
+[ ] newGame() resetea todo correctamente
+[ ] No hay console.log de debug
+[ ] El layout es correcto en portrait mode (no se rompe al girar)
+[ ] Touch events funcionan (no solo click)
+[ ] El espacio vacío queda ABAJO (no centrado)
 ```
 
 ---
-Estás construyendo la UI de un marcador de Truco Uruguayo para Android (portrait mode únicamente).
-NO es una web app. Todo el diseño debe estar optimizado para pantalla de celular Android.
 
-═══════════════════════════════════════
-ESTRUCTURA GENERAL
-═══════════════════════════════════════
+## 📁 Sistema de archivos de agentes
 
-- Layout de 2 columnas simétricas: izquierda = "Nosotros", derecha = "Ellos"
-- Ambas columnas son idénticas en estructura y comportamiento
-- Cada columna tiene 4 zonas de arriba hacia abajo:
-  1. Header
-  2. Sección Malas
-  3. Sección Buenas
-  4. Trashcan
+Cada agente guarda sus outputs en su carpeta bajo `c:\truco\docs\`:
+```
+c:\truco\docs\
+├── dev-agent\      ← planes, specs técnicas generadas por Dev Agent
+├── qa-agent\       ← reportes de testing, casos de prueba
+├── review-agent\   ← reportes de code review
+└── docs-agent\     ← changelogs, PRD updates, release notes
+```
 
-═══════════════════════════════════════
-UNIDAD BASE: BLOQUE DE 5 PUNTOS
-═══════════════════════════════════════
+**Convención de nombres (sin excepción):**
+```
+[tipo]_[descripción-corta]_YYYYMMDD_HHMM.md
 
-Todo el layout se dimensiona en función de UNA unidad base: el tamaño de un bloque de 5 puntos.
-- Header height = 1 bloque de 5 puntos
-- Trashcan height = 1 bloque de 5 puntos
-- Gap entre bloques = mínimo
-- El tamaño del bloque NUNCA cambia al agregar o quitar puntos.
-  Solo cambia al cambiar el modo de juego.
+Ejemplos:
+plan_feature-match-history_20250215_1430.md
+review_index-html-audit_20250215_1445.md
+test_scoring-logic_20250215_1500.md
+changelog_v1-2-0_20250215_1510.md
+```
+- **NUNCA sobreescribir** un archivo existente
+- Si el archivo ya existe con ese timestamp → agregar sufijo `_v2`, `_v3`
+- Los archivos en `c:\truco\docs\` son el historial de decisiones del proyecto
 
-═══════════════════════════════════════
-MODOS DE JUEGO
-═══════════════════════════════════════
+---
 
-Modo 10+10 → 2 bloques en Malas + 2 bloques en Buenas por columna
-Modo 20+20 → 4 bloques en Malas + 4 bloques en Buenas por columna
-Modo 25+25 → 5 bloques en Malas + 5 bloques en Buenas por columna
+## 📋 Features planificadas (del README original)
 
-Cada bloque siempre representa exactamente 5 puntos.
+| Feature | Prioridad | Estado |
+|---------|-----------|--------|
+| Match history | P2 | Pendiente |
+| Sound effects al sumar punto | P2 | Pendiente |
+| Win animations | P2 | Pendiente |
+| Custom app icon | P3 | Pendiente |
+| Splash screen | P3 | Pendiente |
+| Light/dark mode | P3 | Pendiente |
 
-═══════════════════════════════════════
-HEADER
-═══════════════════════════════════════
+---
 
-- Muestra: nombre del equipo (Nosotros / Ellos) y puntuación en formato "actual/total" (ej: 7/25)
-- Sin ningún comportamiento interactivo. Ningún tap, ningún click, ninguna acción.
-- Height = altura de un bloque de 5 puntos (hardcodeado, no dinámico)
+## ⚠️ Qué NO hacer (específico para este proyecto)
 
-═══════════════════════════════════════
-LAYOUT DE BLOQUES — REGLA ABSOLUTA
-═══════════════════════════════════════
-
-⚠️ NUNCA usar justify-content, align-items center/space-between, o cualquier
-   distribución vertical. El espacio vacío SIEMPRE queda abajo. SIEMPRE.
-
-- Los bloques arrancan desde el borde superior de su sección (top: 0)
-- Se apilan hacia abajo con gap mínimo
-- El espacio vacío es un espacio muerto en la parte inferior
-- Los bloques están centrados horizontalmente dentro de su columna
-- La distancia del último bloque al borde inferior de la sección
-  es como máximo la altura de un bloque de 5 puntos
-
-Sección Malas:
-  → Primer bloque pegado al borde superior, debajo del header
-  → Los siguientes apilados hacia abajo con gap mínimo
-
-Sección Buenas:
-  → Primer bloque pegado al borde superior, debajo de la línea divisoria Malas/Buenas
-  → Los siguientes apilados hacia abajo con gap mínimo
-
-═══════════════════════════════════════
-COMPORTAMIENTO DE PUNTOS
-═══════════════════════════════════════
-
-- Cada tap DENTRO de la sección Malas o Buenas = +1 punto exacto
-- Tap fuera de estas secciones = ninguna acción
-- Los puntos se registran siempre de arriba hacia abajo dentro del bloque,
-  y de bloque superior a inferior dentro de la sección
-- Todos los puntos son del mismo color, sin distinción visual
-- Se llenan primero todos los puntos de Malas, luego los de Buenas
-- No se puede saltar de sección ni adelantar puntos en Buenas si Malas no está completa
-- Un tap en la zona vacía inferior de una sección no suma puntos
-  si esa sección ya está completa
-
-═══════════════════════════════════════
-TRASHCAN
-═══════════════════════════════════════
-
-- Uno por columna, debajo de la sección Buenas
-- Height = altura de un bloque de 5 puntos (misma unidad base)
-- Width = mismo ancho que los bloques de 5 puntos, centrado horizontalmente
-- Cada tap = -1 punto del último punto anotado en esa columna
-- Orden inverso: si el último punto fue en Buenas, se resta de Buenas.
-  Si Buenas está vacía, se resta de Malas.
-
-═══════════════════════════════════════
-RESTRICCIONES CRÍTICAS — NO ROMPER
-═══════════════════════════════════════
-
-1. El tamaño del bloque NO se recalcula en cada render al agregar puntos.
-   Solo se recalcula cuando cambia el modo de juego.
-
-2. El espacio vacío al final de la sección NUNCA empuja bloques hacia el centro.
-   Implementar con position absolute o flex-start + padding-bottom fijo,
-   NUNCA con justify-content que distribuya el espacio.
-
-3. La altura del header está hardcodeada al valor de la unidad base (bloque de 5 puntos).
-   No depende del tamaño del texto ni es dinámica.
-
-4. Las secciones Malas y Buenas son táctiles solo cuando corresponde:
-   Malas acepta taps hasta completarse. Buenas solo acepta taps cuando Malas está completa.
+- No crear archivos `.js` o `.css` separados — todo va en `index.html`
+- No agregar frameworks JS (React, Vue, etc.) sin autorización explícita
+- No cambiar las constantes de color sin aprobación del PO
+- No modificar la lógica de palitos SVG sin entender `renderScores()`
+- No usar `justify-content: center/space-between` en el layout de bloques
+- No asumir que `click` funciona en Android — siempre verificar touch events
+- No hacer push a `stage` o `main` sin instrucción explícita del PO
+- No instalar dependencias npm sin consultar (Capacitor es suficiente)

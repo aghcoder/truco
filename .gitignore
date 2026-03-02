@@ -2,3 +2,13 @@ node_modules/
 android/
 .DS_Store
 *.log
+
+# Binaries & build outputs
+*.apk
+*.aab
+*.keystore
+
+# Local/temp
+old/
+.claude/settings.local.json
+.claude/worktrees/
